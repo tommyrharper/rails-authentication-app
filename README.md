@@ -81,8 +81,10 @@ Notice that it automatically requires a password_confirmation field and it retur
 
 Head to ```config/routes.rb``` and add the following route:
 ```ruby
-resoures :sessions, only: [:create]
+resources :sessions, only: [:create]
 ```
+
+### Step 3
 
 Then create ```app/controllers/sessions_controller.rb``` and add in the following code:
 
@@ -96,9 +98,9 @@ class SessionsController < ApplicationController
       if user
         # If the user is created we make a cookie
         session[:user_id] = user.id
-        reder json: {
+        render json: {
           status: :created,
-          logged_in: ture,
+          logged_in: true,
           user: user
         }
       else
@@ -108,6 +110,120 @@ class SessionsController < ApplicationController
 end
 ```
 Notice the authenticate method is built in to rails.
+
+## Implementing Registration controller and Final Authentication Features
+
+### Step 1
+Add to ```routes.rb``` the following route:
+```ruby
+resources :registration, only: [:create]
+```
+Then create ```app/controllers/registrations_controller.rb``` and enter in the following code:
+```ruby
+class RegistrationsController < ApplicationController
+  def create
+    user = User.create!(
+      email: params['user']['email'],
+      password: params['user']['password'],
+      password_confirmation: params['user']['password_confirmation']
+    )
+
+    if user
+      session[:user_id] = user.id 
+      render json: {
+        status: :created,
+        user: user
+      }
+    else
+      render json: { status: 500 }
+    end
+  end
+end
+```
+
+### Step 2
+Add into ```application_controller```
+```ruby
+skip_before_action :verify_authenticity_token
+```
+Then test it is running with the following by running ```rails s``` and then in a new terminal:
+```
+curl --header "Content-Type: application/json" --request POST --data '{"user": {"email": "z@dev.com", "password": "asdfasdf"}}' http://localhost:3000/sessions
+```
+
+### Step 3
+
+Update ```routes.rb``` again with these new routes:
+```ruby
+delete :logout, to: "sessions#logout"
+get :logged_in, to: "sessions#logged_in"
+```
+Then add a new method to ```sessions_controller.rb```:
+```ruby
+def logged_in
+end
+```
+
+### Step 4
+
+Then create ```app/controllers/concerns/current_user_concern.rb```
+And give it the following code:
+```ruby
+module CurrentUserConcern
+  extend ActiveSupport::CurrentUserConcern
+
+  included do
+    before_action :set_current_user
+  end
+
+  def set_current_user
+    if sessions[:user_id]
+      @current_user = User.find(session[:user_id])
+    end
+  end
+end
+```
+
+### Step 5
+
+Now we need to include this module in ```sessions_conttroller.rb``` as follows:
+```ruby
+class SessionsController < ApplicationController
+  include CurrentUserConcern
+  def create
+  ....
+```
+And update the logged_in method:
+```ruby
+  def logged_in
+    if @current_user
+      render json: {
+        logged_in: true,
+        user: @current_user
+      }
+    else 
+      render json: {
+        logged_in: false
+      }
+    end
+  end
+```
+
+### Step 6
+
+Now add a logout method to ```sessions_controller.rb```
+```ruby
+def logout
+  reset_session
+  render json: { status : 200, logged_out: true }
+end
+```
+
+## Configuring the API Session Store to Work in All environments
+
+### Step 1
+
+
 
 # README
 
