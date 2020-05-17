@@ -1,5 +1,35 @@
 # Rails authentication app
 
+## How to use this application
+
+1. Clone this repository to your local machine.
+2. Enter into its root directory and run the following commands:
+```
+bundle
+rails db:create
+rails db:migrate
+```
+
+Then you can use the following command when you want to start the server:
+```
+rails s
+```
+
+If you now enter in your browser ```localhost:3000``` you should get the following message:
+```
+{"status":"It's working"}
+```
+Now if you want to add a User to the database you can use the following commands:
+```
+$ rails c
+> User.create!(email: "z@dev.com", password: "asdfasdf", password_confirmation: "asdfasdf")
+```
+
+Here is an example of a POST request you could make to login to this account using this application:
+```
+curl --header "Content-Type: application/json" --request POST --data '{"user": {"email": "z@dev.com", "password": "asdfasdf"}}' http://localhost:3000/sessions
+```
+
 
 # How to create this application from scratch
 
@@ -223,29 +253,22 @@ end
 
 ### Step 1
 
+Open ```sessions_store.rb``` and add the following code:
+```ruby
+if Rails.env == "production"
+  Rails.application.config.session_store :cookie_store, key: "_authentication_app", domain: 
+  "trh-authentication-app-api.herokuapp.com"
+else
+  Rails.application.config.session_store :cookie_store, key: "_authentication_app"
+end
+```
+Now your Rails API should be complete. You may want to build another application to interact with it using a technology such as react.js to act as a user interface.
+
+# Notes
 
 
-# README
+* Ruby version 2.7.0
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+* System dependencies - Ruby on Rails
 
-Things you may want to cover:
 
-* Ruby version
-
-* System dependencies
-
-* Configuration
-
-* Database creation
-
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
