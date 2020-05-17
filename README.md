@@ -1,8 +1,9 @@
 # Rails authentication app
 
-## Notes
 
-## How to create this application from scratch
+# How to create this application from scratch
+
+## App creation and Initial configuration
 
 ### Step 1
 
@@ -48,9 +49,65 @@ class StaticController < ApplicationController
 end
 ```
 Now we have added all the key elements we need to implement authentication.
+By running ```rails s``` we should find ```{ "status": "It's working" }``` on localhost:3000
 
+## Building User Model and Session controller for the API
 
+### Step 1
+Run 
+```
+rails g model User email password_digest
+rails db:migrate
+```
+Then add to ```app/models/user.rb
+```ruby
+class User < ApplicationRecord
+  has_secure_password
 
+  validates_presence_of :email
+  validate_uniqueness_of :email
+end
+```
+
+### Step 2
+
+Run ```rails c``` to enter the rails console.
+```
+> User.create!(email: "z@dev.com", password: "asdfasdf", password_confirmation: "asdfasdf")
+```
+This will check that it works so far.
+
+Notice that it automatically requires a password_confirmation field and it returns a password digest.
+
+Head to ```config/routes.rb``` and add the following route:
+```ruby
+resoures :sessions, only: [:create]
+```
+
+Then create ```app/controllers/sessions_controller.rb``` and add in the following code:
+
+```ruby
+class SessionsController < ApplicationController
+  def create
+    user = User
+      .find_by(email: params["user"]["email"])
+      .try(:authenticate, params["user"]["password"])
+
+      if user
+        # If the user is created we make a cookie
+        session[:user_id] = user.id
+        reder json: {
+          status: :created,
+          logged_in: ture,
+          user: user
+        }
+      else
+        render json: { status: 401 }
+      end
+  end
+end
+```
+Notice the authenticate method is built in to rails.
 
 # README
 
